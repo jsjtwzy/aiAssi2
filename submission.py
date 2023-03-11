@@ -6,8 +6,9 @@ import math
 import sys
 from collections import Counter
 from util import *
+import time
 
-
+SEED = time.time
 ############################################################
 # Problem 1: hinge loss
 ############################################################
@@ -18,7 +19,8 @@ def problem_1a():
         so, touching, quite, impressive, not, boring
     """
     # BEGIN_YOUR_ANSWER (our solution is 1 lines of code, but don't worry if you deviate from this)
-    raise NotImplementedError  # remove this line before writing code
+    weights  = dict(zip(['so', 'touching', 'quite', 'impressive', 'not', 'boring'], [1, 1, 0, 0, -1, -1]))
+    return weights
     # END_YOUR_ANSWER
 
 ############################################################
@@ -37,7 +39,10 @@ def extractWordFeatures(x):
     Example: "I am what I am" --> {'I': 2, 'am': 2, 'what': 1}
     """
     # BEGIN_YOUR_ANSWER (our solution is 6 lines of code, but don't worry if you deviate from this)
-    raise NotImplementedError  # remove this line before writing code
+    words = x.split(' ')
+    wordset = set(words)
+    res = dict((word, words.count(word)) for word in wordset)
+    return res
     # END_YOUR_ANSWER
 
 ############################################################
@@ -65,7 +70,42 @@ def learnPredictor(trainExamples, testExamples, featureExtractor, numIters, eta)
         return 1 / (1 + math.exp(-n))
 
     # BEGIN_YOUR_ANSWER (our solution is 14 lines of code, but don't worry if you deviate from this)
-    raise NotImplementedError  # remove this line before writing code
+    
+    trainExamplesDict = dict(trainExamples)
+    features = []
+    
+    # modifications needed
+    for key, value in trainExamplesDict.items():
+        features.append(featureExtractor(key))
+        for word in testExamples[:][0]:
+            weights[word] = value
+    
+    def loss(xFeature, w):
+        if dotProduct(xFeature, w) > 0:
+            p_w = sigmoid(dotProduct(xFeature, w))
+        elif dotProduct(xFeature, w) <= 0:
+            p_w = 1 -sigmoid(dotProduct(xFeature, w))
+        res = -math.log(p_w)
+        return res
+    
+    def weightIter(num):
+        if num == 0:
+            iterRes = weights
+        elif num == 1:
+            iterRes = weightIter(num -1)
+            increment(iterRes, -eta, weights)
+        else:
+            w1 = weightIter(num -1)
+            w2 = weightIter(num -2)
+            iterRes = dict(w1)
+            Dloss = loss(features, w1) -loss(features, w2)
+            increment(w1, -1, w2)
+            for key, _ in w1.items():
+                if w1[key] != 0:
+                    w1[key] = Dloss /w1.get(key, 0)
+            increment(iterRes, -eta, w1)
+        return iterRes
+    weights = weightIter(numIters)
     # END_YOUR_ANSWER
     return weights
 
