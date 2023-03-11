@@ -78,7 +78,8 @@ def learnPredictor(trainExamples, testExamples, featureExtractor, numIters, eta)
     for key, value in trainExamplesDict.items():
         features.append(featureExtractor(key))
         for word in testExamples[:][0]:
-            weights[word] = value
+            if word == key:
+                weights[word] = value
     
     def loss(xFeature, w):
         if dotProduct(xFeature, w) > 0:
