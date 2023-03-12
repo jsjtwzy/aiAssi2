@@ -71,44 +71,70 @@ def learnPredictor(trainExamples, testExamples, featureExtractor, numIters, eta)
 
     # BEGIN_YOUR_ANSWER (our solution is 14 lines of code, but don't worry if you deviate from this)
     
-    trainExamplesDict = dict(trainExamples)
     features = []
+    beginTime = time.perf_counter()
     
-    # modifications needed
-    for key, value in trainExamplesDict.items():
+    # Extracting feature vectors
+    for key, value in trainExamples:
         features.append(featureExtractor(key))
-        for word in testExamples[:][0]:
-            if word == key:
-                weights[word] = value
+        for word, _ in featureExtractor(key).items():
+            weights[word] = value
     
-    def loss(xFeature, w):
-        if dotProduct(xFeature, w) > 0:
+    def loss(xFeature, y, w):
+        if y == 1:
             p_w = sigmoid(dotProduct(xFeature, w))
-        elif dotProduct(xFeature, w) <= 0:
+        elif y == -1:
             p_w = 1 -sigmoid(dotProduct(xFeature, w))
+        else:
+            raise
         res = -math.log(p_w)
         return res
     
+    # Measuring the gradient of loss according to the change of weight
+    def gradLoss(w1, w2, index):
+        feature = features[index]
+        y = trainExamples[index][1]
+        Dloss = loss(feature, y, w1) -loss(feature, y, w2)
+        gradRes = dict(w1)
+        increment(gradRes, -1, w2)
+        for key, _ in gradRes.items():
+            if gradRes[key] != 0:
+                gradRes[key] = Dloss /gradRes.get(key, 0)
+        return gradRes
+        
     def weightIter(num):
+        # Initializing
         if num == 0:
-            iterRes = weights
+            iterRes = dict(weights)
         elif num == 1:
             iterRes = weightIter(num -1)
             increment(iterRes, -eta, weights)
         else:
             w1 = weightIter(num -1)
             w2 = weightIter(num -2)
-            iterRes = dict(w1)
-            Dloss = loss(features, w1) -loss(features, w2)
-            increment(w1, -1, w2)
-            for key, _ in w1.items():
-                if w1[key] != 0:
-                    w1[key] = Dloss /w1.get(key, 0)
-            increment(iterRes, -eta, w1)
+            iterRes = w1
+            for index in range(len(trainExamples)):
+                gLoss = gradLoss(w1, w2, index)
+                if dotProduct(gLoss, gLoss) >10e-4:
+                    increment(iterRes, -eta, gLoss)
         return iterRes
     weights = weightIter(numIters)
+    print(weights, time.perf_counter() -beginTime)
     # END_YOUR_ANSWER
     return weights
+
+trainExamples = (("hi bye", 1), ("hi hi", -1))
+testExamples = (("hi", -1), ("bye", 1))
+featureExtractor = extractWordFeatures
+weights = learnPredictor(trainExamples, testExamples, featureExtractor, numIters=20, eta=0.01)
+trainExamples = (("hello world", 1), ("goodnight moon", -1))
+testExamples = (("hello", 1), ("moon", -1))
+featureExtractor = extractWordFeatures
+weights = learnPredictor(trainExamples, testExamples, featureExtractor, numIters=20, eta=0.01)
+trainExamples = readExamples('polarity.train')
+devExamples = readExamples('polarity.dev')
+featureExtractor = extractWordFeatures
+weights = learnPredictor(trainExamples, devExamples, featureExtractor, numIters=20, eta=0.01)
 
 ############################################################
 # Problem 2c: ngram features
