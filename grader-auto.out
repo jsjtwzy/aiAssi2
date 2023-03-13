@@ -4,12 +4,13 @@
  'maxTotalPoints': 1,
  'messages': [],
  'mode': 'auto',
- 'parts': [{'description': 'basic test',
+ 'parts': [{'description': 'test correct overriding of positive weight due to '
+                           'one negative instance with repeated words',
             'extraCredit': False,
             'maxPoints': 1,
             'maxSeconds': 1,
             'messages': [],
-            'name': '2a-0-basic',
+            'name': '2b-1-basic',
             'points': 1,
             'seconds': 0}],
  'totalPoints': 1}

@@ -19,7 +19,7 @@ def problem_1a():
         so, touching, quite, impressive, not, boring
     """
     # BEGIN_YOUR_ANSWER (our solution is 1 lines of code, but don't worry if you deviate from this)
-    weights  = dict(zip(['so', 'touching', 'quite', 'impressive', 'not', 'boring'], [1, 1, 0, 0, -1, -1]))
+    weights = dict(zip(['so', 'touching', 'quite', 'impressive', 'not', 'boring'], [1, 1, 0, 0, -1, -1]))
     return weights
     # END_YOUR_ANSWER
 
@@ -86,7 +86,7 @@ def learnPredictor(trainExamples, testExamples, featureExtractor, numIters, eta)
         elif y == -1:
             p_w = 1 -sigmoid(dotProduct(xFeature, w))
         else:
-            raise
+            raise NotImplemented
         res = -math.log(p_w)
         return res
     
@@ -101,40 +101,39 @@ def learnPredictor(trainExamples, testExamples, featureExtractor, numIters, eta)
             if gradRes[key] != 0:
                 gradRes[key] = Dloss /gradRes.get(key, 0)
         return gradRes
-        
-    def weightIter(num):
+    
+    #Restruction needed
+    def weightGen(w0):
         # Initializing
-        if num == 0:
-            iterRes = dict(weights)
-        elif num == 1:
-            iterRes = weightIter(num -1)
-            increment(iterRes, -eta, weights)
-        else:
-            w1 = weightIter(num -1)
-            w2 = weightIter(num -2)
-            iterRes = w1
+        wList = [dict(w0)]
+        increment(w0, -eta, wList[0])
+        while True:
+            wNew = yield
+            if wNew == None:
+                break
+            wList.append(dict(wNew))
             for index in range(len(trainExamples)):
-                gLoss = gradLoss(w1, w2, index)
-                if dotProduct(gLoss, gLoss) >10e-4:
-                    increment(iterRes, -eta, gLoss)
-        return iterRes
-    weights = weightIter(numIters)
-    print(weights, time.perf_counter() -beginTime)
+                gLoss = gradLoss(wNew, wList[0], index)
+                increment(wNew, -eta, gLoss)
+            wList.pop(0)
+        genRes = wNew
+        return genRes
+    
+    def weightIter(num, w):
+        gen = weightGen(weights)
+        next(gen)
+        for _ in range(num):
+            gen.send(w)
+        try:
+            gen.send(None)
+        except StopIteration:
+            pass
+        return
+    
+    weightIter(numIters, weights)
+    print(time.perf_counter() -beginTime)
     # END_YOUR_ANSWER
     return weights
-
-trainExamples = (("hi bye", 1), ("hi hi", -1))
-testExamples = (("hi", -1), ("bye", 1))
-featureExtractor = extractWordFeatures
-weights = learnPredictor(trainExamples, testExamples, featureExtractor, numIters=20, eta=0.01)
-trainExamples = (("hello world", 1), ("goodnight moon", -1))
-testExamples = (("hello", 1), ("moon", -1))
-featureExtractor = extractWordFeatures
-weights = learnPredictor(trainExamples, testExamples, featureExtractor, numIters=20, eta=0.01)
-trainExamples = readExamples('polarity.train')
-devExamples = readExamples('polarity.dev')
-featureExtractor = extractWordFeatures
-weights = learnPredictor(trainExamples, devExamples, featureExtractor, numIters=20, eta=0.01)
 
 ############################################################
 # Problem 2c: ngram features
